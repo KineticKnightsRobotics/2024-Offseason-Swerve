@@ -26,7 +26,7 @@ public class Constants {
         public static final double driveGearRatio = 1.0 / 5.9;
         public static final double turnGearRatio  = 1.0 / (150.0 / 7.0);
         
-        public static final double turnConversion = 2*Math.PI * turnGearRatio;
+        public static final double turnConversion = 360 * turnGearRatio;
         public static final double driveConversion = 2*wheelRadius*Math.PI * driveGearRatio;
 
         public static final boolean invertDrive = false;

@@ -4,12 +4,14 @@ import com.ctre.phoenix6.hardware.CANcoder;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkPIDController;
+import com.revrobotics.CANSparkBase.ControlType;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.lib.PID_Config.SwereModule.ModuleVelocity.FeedForward;
 
 
 
@@ -19,13 +21,13 @@ public class SwerveModule extends SubsystemBase {
 
     //Declare Objects up Here!
 
-    private PIDController PID_TURNING;
-
+    private static SimpleMotorFeedforward driveFeedForward;
 
     private static CANSparkMax driveMotor;
     // Encoder = scary
     private static RelativeEncoder driveEncoder;
 
+    private static SparkPIDController drivePID;
 
     private static CANSparkMax turnMotor;
     // Encoder = scaryier
@@ -86,15 +88,25 @@ public class SwerveModule extends SubsystemBase {
         turnPID.setI(PID_Config.SwereModule.ModuleVelocity.Integral);
         turnPID.setD(PID_Config.SwereModule.ModuleVelocity.Derivitive);
 
-        new SimpleMotorFeedforward(
+
+
+        drivePID.setP(PID_Config.SwereModule.ModuleVelocity.Proportional);
+        drivePID.setI(PID_Config.SwereModule.ModuleVelocity.Integral);
+        drivePID.setD(PID_Config.SwereModule.ModuleVelocity.Derivitive);
+
+
+        driveFeedForward = new SimpleMotorFeedforward(
             PID_Config.SwereModule.ModuleVelocity.FeedForward.driveKS,
             PID_Config.SwereModule.ModuleVelocity.FeedForward.driveKV,
             PID_Config.SwereModule.ModuleVelocity.FeedForward.driveKA);
 
+        
         // Initializes the turning motre and ecodeeeeeee
         turnMotor = new CANSparkMax(turnID, MotorType.kBrushless); 
+
         // Resets to def
         turnMotor.restoreFactoryDefaults();
+
         // I keep on forgetting the semi colon :( no bueno
         // Initializationnnnnnnnnnn
         // does same as drive motor but for the turning one
@@ -102,19 +114,13 @@ public class SwerveModule extends SubsystemBase {
         turnMotor.setInverted(invertTurn);
         
         // *insert more encoder stuff that im afraid of*
-
-        // tis PID time.
-        // Initializing...
-        this.PID_TURNING = new PIDController(
-        PID_Config.SwereModule.ModuleTurning.Proportional,
-        PID_Config.SwereModule.ModuleTurning.Integral,
-        PID_Config.SwereModule.ModuleTurning.Derivitive);
-        // PID turner does math stuff
-        PID_TURNING.enableContinuousInput(-Math.PI, Math.PI);
+        
+        SwerveModule.turnEncoder = turnMotor.getEncoder();
+        turnEncoder.getPosition();
+        
 
 
-
-        // Im not sure if you wanted ModuleDataDashboard bcuz its in a different thingy
+        // I'm not sure if you wanted ModuleDataDashboard bcuz its in a different thingy
 
 
     }
@@ -124,13 +130,18 @@ public class SwerveModule extends SubsystemBase {
     public void setModuleState(SwerveModuleState newState) {
         //Some logic stuff here
         // Not sure if i was supposed to set it to zero but it got rid of the error
-        setDriveSpeed(0);
-        setTurnAngle(0);
+        setDriveSpeed(newState.speedMetersPerSecond);
+        setTurnAngle(newState.angle.getDegrees());
     }
 
-    public void setDriveSpeed(double speed) {}
+    public void setDriveSpeed(double speed) {
+        drivePID.setReference(speed, ControlType.kVelocity, 0, driveFeedForward.calculate(speed));
+        
+    }
     
-    public void setTurnAngle(double angle) {}
+    public void setTurnAngle(double angle) {
+        turnPID.setReference(angle, ControlType.kPosition);
+    }
 
     public void getModuleAngle() {}
 
